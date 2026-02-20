@@ -1,4 +1,4 @@
-fastembed==0.7.4
+huggingface_hub==1.4.1
 itemadapter==0.13.1
 psycopg2==2.9.11
 python-dotenv==1.2.1

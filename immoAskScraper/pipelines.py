@@ -2,10 +2,9 @@ import psycopg2
 import json
 import os
 from psycopg2.extras import DictCursor
-from fastembed import TextEmbedding
-from fastembed.common.model_description import PoolingType, ModelSource
 from dotenv import load_dotenv
 from itemadapter import ItemAdapter
+from huggingface_hub import InferenceClient
 
 load_dotenv()
 
@@ -117,6 +116,7 @@ class PostgresPipeline:
         user_from_custom_settings = settings.get("DB_USER")
         password_from_custom_settings = settings.get("DB_PASSWORD")
         database_from_custom_settings = settings.get("DB_NAME")
+        hugging_face_token_from_custom_settings = settings.get("HF_TOKEN")
 
         # Instanciation de la pipeline
         return cls(
@@ -124,13 +124,15 @@ class PostgresPipeline:
             user=user_from_custom_settings,
             password=password_from_custom_settings,
             database=database_from_custom_settings,
+            hugging_face_token=hugging_face_token_from_custom_settings,
         )
 
-    def __init__(self, hostname, user, password, database):
+    def __init__(self, hostname, user, password, database, hugging_face_token):
         hostname = os.getenv("DB_HOSTNAME") or hostname
         user = os.getenv("DB_USER") or user
         password = os.getenv("DB_PASSWORD") or password
         database = os.getenv("DB_NAME") or database
+        hf_token = os.getenv("HF_TOKEN") or hugging_face_token
 
         # Connexion à la base de données
         self.connection = psycopg2.connect(
@@ -152,24 +154,15 @@ class PostgresPipeline:
             description VARCHAR,
             images VARCHAR [],
             source JSON NOT NULL,
-            embedding VECTOR(384)
+            embedding VECTOR(1024)
             )    
             """
         )
 
-        # Ajout d'un modèle de langage pour la recherche sémantique
-        # intfloat/multilingual-e5-small traite plusieurs langues dont le français
-        TextEmbedding.add_custom_model(
-            model="intfloat/multilingual-e5-small",
-            pooling=PoolingType.MEAN,
-            normalization=True,
-            sources=ModelSource(hf="intfloat/multilingual-e5-small"),
-            dim=384,
-        )
-
-        # Initialisation du modèle
-        self.embedding_model = TextEmbedding(
-            model_name="intfloat/multilingual-e5-small"
+        # Initialisation du client hugging_face
+        self.hf_client = InferenceClient(
+            provider="auto",
+            api_key=hf_token,
         )
 
     def process_item(self, item):
@@ -188,14 +181,13 @@ class PostgresPipeline:
             query = """INSERT INTO offers(type, title, price, surface, localisation, description, images, source, embedding)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)                
             """
-            # Vectorise la description grâce au modèle de langage
-            embedding = (
-                list(
-                    self.embedding_model.embed(
-                        item.get("description") or item.get("title") or ""
-                    )
-                )
-            )[0].tolist()
+
+            # Vectorisation de la description/titre d'une annonce
+            # à partir d'un modèle de hugging face
+            embedding = self.hf_client.feature_extraction(
+                item.get("description") or item.get("title") or "",
+                model="intfloat/multilingual-e5-large-instruct",
+            )
 
             values = [
                 item.get("type"),
@@ -206,7 +198,7 @@ class PostgresPipeline:
                 item.get("description"),
                 item.get("images"),
                 json.dumps(item.get("source")),
-                embedding,
+                embedding.tolist(),
             ]
 
             # Exécution de la requête
