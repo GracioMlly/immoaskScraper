@@ -63,7 +63,7 @@ ITEM_PIPELINES = {
     "immoAskScraper.pipelines.IgoeimmobilierPipeline": 2,
     "immoAskScraper.pipelines.IntendancePipeline": 3,
     "immoAskScraper.pipelines.CoinafriquePipeline": 4,
-    # "immoAskScraper.pipelines.PostgresPipeline": 1000,
+    "immoAskScraper.pipelines.PostgresPipeline": 1000,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

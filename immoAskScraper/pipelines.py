@@ -15,7 +15,9 @@ class ImmoaskscraperPipeline:
     def process_item(self, item):
         adapter = ItemAdapter(item)
         if not adapter.get("price") or not adapter.get("description"):
-            drop_reason = "le prix" if adapter.get("price") is None else "la description"
+            drop_reason = (
+                "le prix" if adapter.get("price") is None else "la description"
+            )
             raise DropItem(f"Ils manquent {drop_reason}")
         else:
             return item
@@ -190,8 +192,11 @@ class PostgresPipeline:
 
             # Vectorisation de la description/titre d'une annonce
             # à partir d'un modèle de hugging face
+            formated_text_for_embedding = (
+                f"passage: {item.get("description")}, au prix de {item.get("price")}"
+            )
             embedding = self.hf_client.feature_extraction(
-                item.get("description") or item.get("title") or "",
+                formated_text_for_embedding,
                 model="intfloat/multilingual-e5-large-instruct",
             )
 
