@@ -4,6 +4,7 @@ import os
 from psycopg2.extras import DictCursor
 from dotenv import load_dotenv
 from itemadapter import ItemAdapter
+from scrapy.exceptions import DropItem
 from huggingface_hub import InferenceClient
 
 load_dotenv()
@@ -12,7 +13,12 @@ load_dotenv()
 # Pipeline Générique
 class ImmoaskscraperPipeline:
     def process_item(self, item):
-        return item
+        adapter = ItemAdapter(item)
+        if not adapter.get("price") or not adapter.get("description"):
+            drop_reason = "le prix" if adapter.get("price") is None else "la description"
+            raise DropItem(f"Ils manquent {drop_reason}")
+        else:
+            return item
 
 
 # Pipeline du site igoeimmobilier

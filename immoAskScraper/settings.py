@@ -59,11 +59,11 @@ DOWNLOAD_DELAY = 1
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "immoAskScraper.pipelines.IgoeimmobilierPipeline": 1,
-    "immoAskScraper.pipelines.IntendancePipeline": 2,
-    "immoAskScraper.pipelines.CoinafriquePipeline": 3,
-    "immoAskScraper.pipelines.PostgresPipeline": 999,
-    "immoAskScraper.pipelines.ImmoaskscraperPipeline": 1000,
+    "immoAskScraper.pipelines.ImmoaskscraperPipeline": 1,
+    "immoAskScraper.pipelines.IgoeimmobilierPipeline": 2,
+    "immoAskScraper.pipelines.IntendancePipeline": 3,
+    "immoAskScraper.pipelines.CoinafriquePipeline": 4,
+    # "immoAskScraper.pipelines.PostgresPipeline": 1000,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
